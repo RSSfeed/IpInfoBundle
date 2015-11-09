@@ -13,7 +13,6 @@
             "email": "info@interface-f.com"
         }
     ],
-    "minimum-stability": "dev",
     "target-dir": "ITF/IpInfoBundle",
     "autoload": {
         "psr-0": {
