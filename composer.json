@@ -1,0 +1,23 @@
+{
+    "name": "itf/ip-info-bundle",
+    "description": "symfony ip bundle",
+    "require": {
+        "php": "5.3",
+        "symfony/symfony": "2.6"
+    },
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "interface-f gmbh",
+            "email": "info@interface-f.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "target-dir": "ITF/IpInfoBundle",
+    "autoload": {
+        "psr-0": {
+            "ITF\\IpInfoBundle": ""
+        }
+    }
+}
