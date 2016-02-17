@@ -83,9 +83,11 @@ class IpDetails
 
 		$this->details = $details;
 
-		foreach($details as $key => $value) {
-			if (property_exists($this, $key)) {
-				$this->{$key} = $value;
+		if (count($details) > 0) {
+			foreach ($details as $key => $value) {
+				if (property_exists($this, $key)) {
+					$this->{$key} = $value;
+				}
 			}
 		}
 	}
