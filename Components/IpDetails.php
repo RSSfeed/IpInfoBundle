@@ -1,26 +1,52 @@
 <?php
 namespace ITF\IpInfoBundle\Components;
 
-use Symfony\Component\Intl\Intl;
+use ITF\IpInfoBundle\Exception\RateLimitExceed;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\OptionsResolver\Exception\MissingOptionsException;
 
 class IpDetails
 {
-	private $ip;
-	private $hostname;
-	private $city;
-	private $region;
-	private $country;
-	private $loc;
-	private $lat;
-	private $lng;
-	private $org;
-	private $details;
+	/** @var ContainerInterface */
+	private $container;
 
-	public function __construct()
+	/** @var array */
+	private $config = array();
+
+	public function __construct(ContainerInterface $containerInterface)
 	{
-		$this->setDetails();
+		$this->container = $containerInterface;
+		$this->config = $this->container->getParameter('ip_info');
 	}
 
+	/**
+	 * @return Request
+	 */
+	private function getRequest()
+	{
+		return $this->container->get('request');
+	}
+	
+	/**
+	 * Get all request data from headers
+	 * 
+	 * @return array
+	 */
+	public function getRequestDetails()
+	{
+		return array(
+			'ip' => $this->getClientIP(),
+			'hostname' => $this->getHostname()
+		);
+	}
+	
+	/**
+	 * Get client ip address
+	 * 
+	 * @param bool $exclude_localhost
+	 * @return bool|null
+	 */
 	public function getClientIP($exclude_localhost = true)
 	{
 		$ipaddress = NULL;
@@ -40,15 +66,75 @@ class IpDetails
 			$ipaddress = 'UNKNOWN';
 
 		if (!$exclude_localhost ||
-			($exclude_localhost && preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', $ipaddress))) {
+			($exclude_localhost && $this->isLocalhost($ipaddress))) {
 
 			return $ipaddress;
 		}
 
 		return false;
 	}
+	
+	/**
+	 * Check if ip is localhost
+	 * 
+	 * @param null $ip
+	 * @return bool
+	 */
+	public function isLocalhost($ip = null)
+	{
+		if ($ip === null) $ip = $this->getClientIP();
 
-	public function getUrlContent($url)
+		return preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', $ip);
+	}
+	
+	/**
+	 * Get hostname
+	 * 
+	 * @return string
+	 */
+	public function getHostname()
+	{
+		return $this->getRequest()->server->get('SERVER_NAME');
+	}
+	
+	/**
+	 * Get request of ipinfo
+	 * 
+	 * @param null $ip
+	 *
+	 * @return array
+	 * @throws MissingOptionsException|RateLimitExceed
+	 */
+	public function requestIpInfo($ip = NULL)
+	{
+		if ($this->config['access_key'] === NULL) {
+			throw new MissingOptionsException(sprintf("Access key must be set to retrieve ip info"));
+		}
+
+		if (empty($ip)) {
+			$ip = $this->getClientIP();
+		}
+
+		$response = $this->getUrlContent('http://ipinfo.io/' . $ip);
+
+		if (preg_match('/Rate\ limit\ exceeded/', $response)) {
+			throw new RateLimitExceed($response);
+		}
+
+		$json = json_decode($response);
+
+		// init ipdetails
+		return $json;
+	}
+	
+	
+	/**
+	 * Get url content
+	 * 
+	 * @param $url
+	 * @return mixed
+	 */
+	private function getUrlContent($url)
 	{
 		if (function_exists('curl_init')){
 			$ch = curl_init();
@@ -61,119 +147,5 @@ class IpDetails
 		}
 
 		return $output;
-	}
-
-	public function getDetails($ip = NULL)
-	{
-		if (empty($ip)) {
-			$ip = $this->getClientIP();
-		}
-
-		// request
-		$response = $this->getUrlContent('http://ipinfo.io/' . $ip);
-		$json = json_decode($response);
-
-		// init ipdetails
-		return $json;
-	}
-
-	protected function setDetails($details = array())
-	{
-		if (empty($details)) $details = $this->getDetails();
-
-		$this->details = $details;
-
-		if (count($details) > 0) {
-			foreach ($details as $key => $value) {
-				if (property_exists($this, $key)) {
-					$this->{$key} = $value;
-				}
-			}
-		}
-	}
-
-	public function setIp($ip)
-	{
-		$details = $this->getDetails($ip);
-		$this->setDetails($details);
-
-		return $this;
-	}
-
-	public function resetIp()
-	{
-		$details = $this->getDetails();
-		$this->setDetails($details);
-
-		return $this;
-	}
-
-	public function getIp()
-	{
-		return $this->ip;
-	}
-
-	public function getHostname()
-	{
-		return $this->hostname;
-	}
-
-	public function getCity()
-	{
-		return $this->city;
-	}
-
-	public function getRegion()
-	{
-		return $this->region;
-	}
-
-	public function getCountry()
-	{
-		return $this->country;
-	}
-
-	public function getCountryName($locale)
-	{
-		\Locale::setDefault('en');
-		return Intl::getRegionBundle()->getCountryName($this->getCountry(), $locale);
-	}
-
-	public function getLocation()
-	{
-		return $this->loc;
-	}
-
-	protected function setLatLng()
-	{
-		list($this->lat, $this->lng) = explode(',', $this->getLocation());
-	}
-
-	public function getLatitude()
-	{
-		if (empty($this->lat)) {
-			$this->setLatLng();
-		}
-
-		return $this->lat;
-	}
-
-	public function getLongitude()
-	{
-		if (empty($this->lng)) {
-			$this->setLatLng();
-		}
-
-		return $this->lng;
-	}
-
-	public function getOrganization()
-	{
-		return $this->org;
-	}
-
-	public function getAll()
-	{
-		return $this->details;
 	}
 }

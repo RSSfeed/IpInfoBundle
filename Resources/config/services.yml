@@ -1,4 +1,5 @@
 services:
     ip_info:
         class: ITF\IpInfoBundle\Components\IpDetails
+        arguments: [ '@service_container' ]
 
