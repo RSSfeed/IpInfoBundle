@@ -1,6 +1,7 @@
 <?php
 namespace ITF\IpInfoBundle\Components;
 
+use ITF\IpInfoBundle\Components\Repository\IpInfo;
 use ITF\IpInfoBundle\Exception\RateLimitExceed;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -102,12 +103,12 @@ class IpDetails
 	 * 
 	 * @param null $ip
 	 *
-	 * @return array
+	 * @return IpInfo
 	 * @throws MissingOptionsException|RateLimitExceed
 	 */
 	public function requestIpInfo($ip = NULL)
 	{
-		if ($this->config['access_key'] === NULL) {
+		if ($this->config['access_key'] === NULL && $this->config['use_rate_limit'] === false) {
 			throw new MissingOptionsException(sprintf("Access key must be set to retrieve ip info"));
 		}
 
@@ -121,10 +122,7 @@ class IpDetails
 			throw new RateLimitExceed($response);
 		}
 
-		$json = json_decode($response);
-
-		// init ipdetails
-		return $json;
+		return new IpInfo(json_decode($response));
 	}
 	
 	
