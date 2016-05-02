@@ -23,6 +23,7 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('access_key')->defaultNull()->end()
+                ->booleanNode('use_rate_limit')->defaultFalse()->end()
             ->end()
         ;
 
