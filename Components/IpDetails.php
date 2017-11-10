@@ -85,7 +85,7 @@ class IpDetails
 	{
 		if ($ip === null) $ip = $this->getClientIP();
 
-		return preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', $ip);
+		return preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', $ip) && $ip != '127.0.0.1';
 	}
 	
 	/**
@@ -119,7 +119,16 @@ class IpDetails
 		$response = $this->getUrlContent('http://ipinfo.io/' . $ip);
 
 		if (preg_match('/Rate\ limit\ exceeded/', $response)) {
-			throw new RateLimitExceed($response);
+            $response = json_encode([
+                "ip" => null,
+                "hostname" => null,
+                "city" => null,
+                "region" => null,
+                "country" => null,
+                "loc" => 0,0,
+                "org" => null,
+                "postal" => null
+            ]);
 		}
 
 		return new IpInfo(json_decode($response));

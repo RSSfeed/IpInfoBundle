@@ -1,0 +1,31 @@
+[1mdiff --git a/Components/IpDetails.php b/Components/IpDetails.php[m
+[1mindex 13247c5..2600c73 100644[m
+[1m--- a/Components/IpDetails.php[m
+[1m+++ b/Components/IpDetails.php[m
+[36m@@ -85,7 +85,7 @@[m [mclass IpDetails[m
+ 	{[m
+ 		if ($ip === null) $ip = $this->getClientIP();[m
+ [m
+[31m-		return preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', $ip);[m
+[32m+[m		[32mreturn preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', $ip) && $ip != '127.0.0.1';[m[41m[m
+ 	}[m
+ 	[m
+ 	/**[m
+[36m@@ -119,7 +119,16 @@[m [mclass IpDetails[m
+ 		$response = $this->getUrlContent('http://ipinfo.io/' . $ip);[m
+ [m
+ 		if (preg_match('/Rate\ limit\ exceeded/', $response)) {[m
+[31m-			throw new RateLimitExceed($response);[m
+[32m+[m[32m            $response = json_encode([[m[41m[m
+[32m+[m[32m                "ip" => null,[m[41m[m
+[32m+[m[32m                "hostname" => null,[m[41m[m
+[32m+[m[32m                "city" => null,[m[41m[m
+[32m+[m[32m                "region" => null,[m[41m[m
+[32m+[m[32m                "country" => null,[m[41m[m
+[32m+[m[32m                "loc" => 0,0,[m[41m[m
+[32m+[m[32m                "org" => null,[m[41m[m
+[32m+[m[32m                "postal" => null[m[41m[m
+[32m+[m[32m            ]);[m[41m[m
+ 		}[m
+ [m
+ 		return new IpInfo(json_decode($response));[m
